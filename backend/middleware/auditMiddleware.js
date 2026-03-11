@@ -42,7 +42,7 @@ const auditLogger = (req, res, next) => {
     try {
       await AuditLog.create({
         requestId: req.requestId,
-        user: req.user?._id,
+        user: req.user?.id || req.user?._id,
         role: req.user?.role,
         method: req.method,
         path: req.originalUrl,

@@ -26,7 +26,7 @@ const signRefreshToken = (id) =>
   });
 
 const sanitizeUser = (user) => ({
-  id: user._id,
+  id: user.id,
   name: user.name,
   email: user.email,
   role: user.role,

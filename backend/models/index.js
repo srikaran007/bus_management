@@ -2,7 +2,8 @@ const bcrypt = require("bcryptjs");
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/db");
 
-const withMongoLikeId = {
+// Keep `_id` as a virtual alias for frontend compatibility during MySQL-only operation.
+const withLegacyIdAlias = {
   _id: {
     type: DataTypes.VIRTUAL,
     get() {
@@ -14,7 +15,7 @@ const withMongoLikeId = {
 const User = sequelize.define(
   "User",
   {
-    ...withMongoLikeId,
+    ...withLegacyIdAlias,
     name: { type: DataTypes.STRING(80), allowNull: false },
     email: { type: DataTypes.STRING(120), allowNull: false, unique: true },
     password: { type: DataTypes.STRING(255), allowNull: false },
@@ -49,7 +50,7 @@ const User = sequelize.define(
 const Bus = sequelize.define(
   "Bus",
   {
-    ...withMongoLikeId,
+    ...withLegacyIdAlias,
     busNumber: { type: DataTypes.STRING(60), allowNull: false, unique: true },
     busName: { type: DataTypes.STRING(120), allowNull: false },
     model: { type: DataTypes.STRING(120), allowNull: true },
@@ -66,7 +67,7 @@ const Bus = sequelize.define(
 const Driver = sequelize.define(
   "Driver",
   {
-    ...withMongoLikeId,
+    ...withLegacyIdAlias,
     driverName: { type: DataTypes.STRING(120), allowNull: false },
     driverId: { type: DataTypes.STRING(60), allowNull: false, unique: true },
     phone: { type: DataTypes.STRING(20), allowNull: false },
@@ -81,7 +82,7 @@ const Driver = sequelize.define(
 const Student = sequelize.define(
   "Student",
   {
-    ...withMongoLikeId,
+    ...withLegacyIdAlias,
     studentName: { type: DataTypes.STRING(120), allowNull: false },
     registerNumber: { type: DataTypes.STRING(80), allowNull: false, unique: true },
     department: { type: DataTypes.STRING(120), allowNull: true },
@@ -96,7 +97,7 @@ const Student = sequelize.define(
 const Route = sequelize.define(
   "Route",
   {
-    ...withMongoLikeId,
+    ...withLegacyIdAlias,
     routeId: { type: DataTypes.STRING(60), allowNull: false, unique: true },
     routeName: { type: DataTypes.STRING(120), allowNull: false },
     startingPoint: { type: DataTypes.STRING(120), allowNull: false },
@@ -110,7 +111,7 @@ const Route = sequelize.define(
 const Attendance = sequelize.define(
   "Attendance",
   {
-    ...withMongoLikeId,
+    ...withLegacyIdAlias,
     date: { type: DataTypes.DATE, allowNull: false },
     attendanceType: { type: DataTypes.ENUM("Morning", "Evening"), allowNull: false },
     subjectType: { type: DataTypes.ENUM("Driver", "Student"), allowNull: false },
@@ -124,7 +125,7 @@ const Attendance = sequelize.define(
 const EntryExitLog = sequelize.define(
   "EntryExitLog",
   {
-    ...withMongoLikeId,
+    ...withLegacyIdAlias,
     busNumber: { type: DataTypes.STRING(60), allowNull: false },
     driverName: { type: DataTypes.STRING(120), allowNull: false },
     route: { type: DataTypes.STRING(120), allowNull: false },
@@ -139,7 +140,7 @@ const EntryExitLog = sequelize.define(
 const AuditLog = sequelize.define(
   "AuditLog",
   {
-    ...withMongoLikeId,
+    ...withLegacyIdAlias,
     requestId: { type: DataTypes.STRING(120), allowNull: true },
     user: { type: DataTypes.INTEGER, allowNull: true },
     role: { type: DataTypes.STRING(40), allowNull: true },
