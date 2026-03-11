@@ -14,7 +14,7 @@ afterAll(async () => {
 });
 
 afterEach(async () => {
-  await sequelize.truncate({ cascade: true, restartIdentity: true });
+  await sequelize.sync({ force: true });
 });
 
 describe("Module APIs", () => {
