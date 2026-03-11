@@ -5,6 +5,8 @@
 **/node_modules/
 /.pnp
 .pnp.js
+HOD_Presentation_Content.rtf
+HOD_Presentation_Content.txt
 
 # testing
 /coverage
