@@ -1,3 +1,5 @@
+const { Op } = require("sequelize");
+
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 10;
 const DEFAULT_PAGE = 1;
@@ -7,49 +9,43 @@ const toInt = (value, fallback) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-const toSortObject = (sort, defaultSort = "-createdAt") => {
+const toOrderArray = (sort, defaultSort = "-createdAt") => {
   const sortValue = (sort || defaultSort).trim();
-  const sortObject = {};
-
-  sortValue
+  const order = sortValue
     .split(",")
     .map((entry) => entry.trim())
     .filter(Boolean)
-    .forEach((entry) => {
-      if (entry.startsWith("-")) {
-        sortObject[entry.slice(1)] = -1;
-      } else {
-        sortObject[entry] = 1;
-      }
+    .map((entry) => {
+      if (entry.startsWith("-")) return [entry.slice(1), "DESC"];
+      return [entry, "ASC"];
     });
 
-  if (!Object.keys(sortObject).length) {
-    sortObject.createdAt = -1;
-  }
-  return sortObject;
+  return order.length ? order : [["createdAt", "DESC"]];
 };
 
 const createPaginationOptions = (query = {}, options = {}) => {
   const page = toInt(query.page, DEFAULT_PAGE);
   const requestedLimit = toInt(query.limit, DEFAULT_LIMIT);
   const limit = Math.min(requestedLimit, options.maxLimit || MAX_LIMIT);
-  const skip = (page - 1) * limit;
+  const offset = (page - 1) * limit;
 
   return {
     page,
     limit,
-    skip,
-    sort: toSortObject(query.sort, options.defaultSort)
+    skip: offset,
+    offset,
+    sort: toOrderArray(query.sort, options.defaultSort),
+    order: toOrderArray(query.sort, options.defaultSort)
   };
 };
 
 const buildRegexSearchFilter = (search, fields = []) => {
-  const searchValue = (search || "").trim();
+  const searchValue = String(search || "").trim();
   if (!searchValue || !fields.length) return {};
 
   return {
-    $or: fields.map((field) => ({
-      [field]: { $regex: searchValue, $options: "i" }
+    [Op.or]: fields.map((field) => ({
+      [field]: { [Op.like]: `%${searchValue}%` }
     }))
   };
 };
@@ -58,7 +54,7 @@ const mergeFilters = (...filters) => {
   const cleaned = filters.filter((filter) => Object.keys(filter || {}).length > 0);
   if (!cleaned.length) return {};
   if (cleaned.length === 1) return cleaned[0];
-  return { $and: cleaned };
+  return { [Op.and]: cleaned };
 };
 
 const getPaginationMeta = (total, page, limit) => ({
@@ -69,6 +65,7 @@ const getPaginationMeta = (total, page, limit) => ({
 });
 
 module.exports = {
+  Op,
   createPaginationOptions,
   buildRegexSearchFilter,
   mergeFilters,

@@ -1,25 +1,19 @@
 const request = require("supertest");
-const mongoose = require("mongoose");
-const { MongoMemoryServer } = require("mongodb-memory-server");
 const app = require("../app");
+const { sequelize } = require("../config/db");
 const { createUserWithToken, authHeader } = require("./testHelpers");
 
-let mongoServer;
-
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  await mongoose.connect(mongoServer.getUri());
+  await sequelize.authenticate();
+  await sequelize.sync({ force: true });
 });
 
 afterAll(async () => {
-  await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
-  await mongoServer.stop();
+  await sequelize.close();
 });
 
 afterEach(async () => {
-  const { collections } = mongoose.connection;
-  await Promise.all(Object.values(collections).map((collection) => collection.deleteMany({})));
+  await sequelize.truncate({ cascade: true, restartIdentity: true });
 });
 
 describe("Auth API", () => {
@@ -34,12 +28,12 @@ describe("Auth API", () => {
       .post("/api/auth/register")
       .set(authHeader(adminToken))
       .send({
-      name: "Admin User",
-      email: "admin@test.com",
-      password: "Admin@123",
-      role: "admin",
-      phone: "9876543210"
-    });
+        name: "Admin User",
+        email: "admin@test.com",
+        password: "Admin@123",
+        role: "admin",
+        phone: "9876543210"
+      });
 
     expect(registerRes.statusCode).toBe(201);
     expect(registerRes.body.accessToken).toBeTruthy();
@@ -59,6 +53,7 @@ describe("Auth API", () => {
       role: "staff",
       email: "staff@test.com"
     });
+
     const response = await request(app)
       .post("/api/auth/register")
       .set(authHeader(token))

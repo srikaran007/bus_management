@@ -1,4 +1,4 @@
-const Driver = require("../models/Driver");
+const { Driver, Bus } = require("../models");
 const AppError = require("../utils/AppError");
 const asyncHandler = require("../utils/asyncHandler");
 const {
@@ -8,8 +8,17 @@ const {
   getPaginationMeta
 } = require("../utils/queryFeatures");
 
+const serializeDriver = (driver) => {
+  const data = driver.toJSON();
+  if (data.assignedBusDetails) {
+    data.assignedBus = data.assignedBusDetails;
+    delete data.assignedBusDetails;
+  }
+  return data;
+};
+
 const getDrivers = asyncHandler(async (req, res) => {
-  const { page, limit, skip, sort } = createPaginationOptions(req.query, {
+  const { page, limit, offset, order } = createPaginationOptions(req.query, {
     defaultSort: "-createdAt"
   });
 
@@ -21,23 +30,28 @@ const getDrivers = asyncHandler(async (req, res) => {
   ]);
   const statusFilter = req.query.status ? { status: req.query.status } : {};
   const busFilter = req.query.assignedBus ? { assignedBus: req.query.assignedBus } : {};
-  const filter = mergeFilters(searchFilter, statusFilter, busFilter);
+  const where = mergeFilters(searchFilter, statusFilter, busFilter);
 
-  const [items, total] = await Promise.all([
-    Driver.find(filter).populate("assignedBus").sort(sort).skip(skip).limit(limit),
-    Driver.countDocuments(filter)
-  ]);
+  const { rows, count } = await Driver.findAndCountAll({
+    where,
+    include: [{ model: Bus, as: "assignedBusDetails" }],
+    order,
+    offset,
+    limit
+  });
 
   res.json({
-    items,
-    pagination: getPaginationMeta(total, page, limit)
+    items: rows.map(serializeDriver),
+    pagination: getPaginationMeta(count, page, limit)
   });
 });
 
 const getDriverById = asyncHandler(async (req, res) => {
-  const driver = await Driver.findById(req.params.id).populate("assignedBus");
+  const driver = await Driver.findByPk(req.params.id, {
+    include: [{ model: Bus, as: "assignedBusDetails" }]
+  });
   if (!driver) throw new AppError("Driver not found", 404);
-  res.json(driver);
+  res.json(serializeDriver(driver));
 });
 
 const createDriver = asyncHandler(async (req, res) => {
@@ -46,14 +60,16 @@ const createDriver = asyncHandler(async (req, res) => {
 });
 
 const updateDriver = asyncHandler(async (req, res) => {
-  const driver = await Driver.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+  const driver = await Driver.findByPk(req.params.id);
   if (!driver) throw new AppError("Driver not found", 404);
+  await driver.update(req.body);
   res.json(driver);
 });
 
 const deleteDriver = asyncHandler(async (req, res) => {
-  const driver = await Driver.findByIdAndDelete(req.params.id);
+  const driver = await Driver.findByPk(req.params.id);
   if (!driver) throw new AppError("Driver not found", 404);
+  await driver.destroy();
   res.json({ message: "Driver deleted successfully" });
 });
 

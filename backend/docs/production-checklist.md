@@ -41,7 +41,7 @@
 ## Deployment
 - [x] PM2 config: `ecosystem.config.js`
 - [x] Dockerfile: `Dockerfile`
-- [x] Docker Compose with MongoDB: `../docker-compose.yml`
+- [x] Docker Compose with MySQL: `../docker-compose.yml`
 - [x] GitHub Actions CI for backend tests: `../.github/workflows/backend-ci.yml`
 - [ ] Add CD (staging/prod) workflow.
-- [ ] Add backup/restore procedure for MongoDB.
+- [ ] Add backup/restore procedure for MySQL.

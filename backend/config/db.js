@@ -1,15 +1,31 @@
-const mongoose = require("mongoose");
+const { Sequelize } = require("sequelize");
+
+const sequelize = new Sequelize(
+  process.env.MYSQL_DATABASE || "bus_management",
+  process.env.MYSQL_USER || "root",
+  process.env.MYSQL_PASSWORD || "",
+  {
+    host: process.env.MYSQL_HOST || "127.0.0.1",
+    port: Number(process.env.MYSQL_PORT || 3306),
+    dialect: "mysql",
+    logging: false
+  }
+);
 
 const connectDB = async () => {
-  const mongoUri = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/bus_management";
-
   try {
-    await mongoose.connect(mongoUri);
-    console.log("MongoDB connected");
+    await sequelize.authenticate();
+
+    if (String(process.env.DB_SYNC || "true").toLowerCase() === "true") {
+      await sequelize.sync();
+      console.log("Tables synced");
+    }
+
+    console.log("MySQL connected");
   } catch (error) {
-    console.error("MongoDB connection failed:", error.message);
+    console.error("MySQL connection failed:", error.message);
     process.exit(1);
   }
 };
 
-module.exports = connectDB;
+module.exports = { sequelize, connectDB };

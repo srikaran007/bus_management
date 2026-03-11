@@ -1,25 +1,38 @@
-const Attendance = require("../models/Attendance");
-const EntryExitLog = require("../models/EntryExitLog");
+const { Attendance, EntryExitLog, User } = require("../models");
 const asyncHandler = require("../utils/asyncHandler");
 const AppError = require("../utils/AppError");
 const { ROLES } = require("../utils/constants");
 const {
+  Op,
   createPaginationOptions,
   buildRegexSearchFilter,
   mergeFilters,
   getPaginationMeta
 } = require("../utils/queryFeatures");
 
+const serializeAttendance = (entry) => {
+  const data = entry.toJSON();
+  if (data.markedByUser) {
+    data.markedBy = data.markedByUser;
+    delete data.markedByUser;
+  }
+  return data;
+};
+
 const getAttendance = asyncHandler(async (req, res) => {
-  const { page, limit, skip, sort } = createPaginationOptions(req.query, {
+  const { page, limit, offset, order } = createPaginationOptions(req.query, {
     defaultSort: "-createdAt"
   });
 
   const dateFilter = {};
   if (req.query.from || req.query.to) {
-    dateFilter.date = {};
-    if (req.query.from) dateFilter.date.$gte = new Date(req.query.from);
-    if (req.query.to) dateFilter.date.$lte = new Date(req.query.to);
+    if (req.query.from && req.query.to) {
+      dateFilter.date = { [Op.between]: [new Date(req.query.from), new Date(req.query.to)] };
+    } else if (req.query.from) {
+      dateFilter.date = { [Op.gte]: new Date(req.query.from) };
+    } else if (req.query.to) {
+      dateFilter.date = { [Op.lte]: new Date(req.query.to) };
+    }
   } else if (req.query.date) {
     dateFilter.date = new Date(req.query.date);
   }
@@ -28,16 +41,19 @@ const getAttendance = asyncHandler(async (req, res) => {
   const subjectIdFilter = req.query.subjectId ? { subjectId: req.query.subjectId } : {};
   const statusFilter = req.query.status ? { status: req.query.status } : {};
   const searchFilter = buildRegexSearchFilter(req.query.search, ["subjectId", "status"]);
-  const query = mergeFilters(dateFilter, subjectTypeFilter, subjectIdFilter, statusFilter, searchFilter);
+  const where = mergeFilters(dateFilter, subjectTypeFilter, subjectIdFilter, statusFilter, searchFilter);
 
-  const [items, total] = await Promise.all([
-    Attendance.find(query).populate("markedBy", "name role").sort(sort).skip(skip).limit(limit),
-    Attendance.countDocuments(query)
-  ]);
+  const { rows, count } = await Attendance.findAndCountAll({
+    where,
+    include: [{ model: User, as: "markedByUser", attributes: ["id", "name", "role"] }],
+    order,
+    offset,
+    limit
+  });
 
   res.json({
-    items,
-    pagination: getPaginationMeta(total, page, limit)
+    items: rows.map(serializeAttendance),
+    pagination: getPaginationMeta(count, page, limit)
   });
 });
 
@@ -51,14 +67,14 @@ const markAttendance = asyncHandler(async (req, res) => {
   }
 
   const payload = { ...req.body };
-  if (req.user) payload.markedBy = req.user._id;
+  if (req.user) payload.markedBy = req.user.id;
 
   const record = await Attendance.create(payload);
   res.status(201).json(record);
 });
 
 const getEntryExitLogs = asyncHandler(async (req, res) => {
-  const { page, limit, skip, sort } = createPaginationOptions(req.query, {
+  const { page, limit, offset, order } = createPaginationOptions(req.query, {
     defaultSort: "-createdAt"
   });
 
@@ -69,26 +85,32 @@ const getEntryExitLogs = asyncHandler(async (req, res) => {
 
   const dateFilter = {};
   if (req.query.from || req.query.to) {
-    dateFilter.createdAt = {};
-    if (req.query.from) dateFilter.createdAt.$gte = new Date(req.query.from);
-    if (req.query.to) dateFilter.createdAt.$lte = new Date(req.query.to);
+    if (req.query.from && req.query.to) {
+      dateFilter.createdAt = { [Op.between]: [new Date(req.query.from), new Date(req.query.to)] };
+    } else if (req.query.from) {
+      dateFilter.createdAt = { [Op.gte]: new Date(req.query.from) };
+    } else if (req.query.to) {
+      dateFilter.createdAt = { [Op.lte]: new Date(req.query.to) };
+    }
   }
 
-  const query = mergeFilters(busFilter, routeFilter, statusFilter, searchFilter, dateFilter);
-  const [items, total] = await Promise.all([
-    EntryExitLog.find(query).sort(sort).skip(skip).limit(limit),
-    EntryExitLog.countDocuments(query)
-  ]);
+  const where = mergeFilters(busFilter, routeFilter, statusFilter, searchFilter, dateFilter);
+  const { rows, count } = await EntryExitLog.findAndCountAll({
+    where,
+    order,
+    offset,
+    limit
+  });
 
   res.json({
-    items,
-    pagination: getPaginationMeta(total, page, limit)
+    items: rows,
+    pagination: getPaginationMeta(count, page, limit)
   });
 });
 
 const createEntryExitLog = asyncHandler(async (req, res) => {
   const payload = { ...req.body };
-  if (req.user) payload.submittedBy = req.user._id;
+  if (req.user) payload.submittedBy = req.user.id;
   payload.status = payload.exitTime ? "Completed" : "Running";
 
   const log = await EntryExitLog.create(payload);

@@ -1,7 +1,8 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const User = require("../models/User");
+const { Op } = require("sequelize");
+const { User } = require("../models");
 const AppError = require("../utils/AppError");
 const asyncHandler = require("../utils/asyncHandler");
 
@@ -33,8 +34,8 @@ const sanitizeUser = (user) => ({
 });
 
 const issueTokens = async (user) => {
-  const accessToken = signAccessToken(user._id);
-  const refreshToken = signRefreshToken(user._id);
+  const accessToken = signAccessToken(user.id);
+  const refreshToken = signRefreshToken(user.id);
   user.refreshTokenHash = await bcrypt.hash(refreshToken, 10);
   await user.save();
   return { accessToken, refreshToken };
@@ -44,7 +45,7 @@ const register = asyncHandler(async (req, res) => {
   const { name, password, role, phone } = req.body;
   const email = normalizeEmail(req.body.email);
 
-  const exists = await User.findOne({ email });
+  const exists = await User.findOne({ where: { email } });
   if (exists) {
     throw new AppError("Email already exists", 400);
   }
@@ -69,7 +70,7 @@ const register = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
   const email = normalizeEmail(req.body.email);
   const { password } = req.body;
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ where: { email } });
 
   if (!user) {
     throw new AppError("Invalid credentials", 401);
@@ -82,7 +83,6 @@ const login = asyncHandler(async (req, res) => {
   }
 
   if (!isHashed) {
-    // Auto-repair legacy records that were saved with plain text password.
     user.password = password;
     await user.save();
   }
@@ -100,7 +100,7 @@ const refreshToken = asyncHandler(async (req, res) => {
   const { refreshToken: token } = req.body;
   const decoded = jwt.verify(token, refreshSecret);
 
-  const user = await User.findById(decoded.id);
+  const user = await User.findByPk(decoded.id);
   if (!user || !user.refreshTokenHash) {
     throw new AppError("Invalid refresh token", 401);
   }
@@ -116,7 +116,7 @@ const refreshToken = asyncHandler(async (req, res) => {
 
 const logout = asyncHandler(async (req, res) => {
   if (req.user) {
-    req.user.refreshTokenHash = undefined;
+    req.user.refreshTokenHash = null;
     await req.user.save();
   }
   res.json({ message: "Logged out successfully" });
@@ -124,7 +124,7 @@ const logout = asyncHandler(async (req, res) => {
 
 const forgotPassword = asyncHandler(async (req, res) => {
   const email = normalizeEmail(req.body.email);
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ where: { email } });
 
   if (!user) {
     throw new AppError("User with this email not found", 404);
@@ -149,8 +149,10 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
   const user = await User.findOne({
-    resetPasswordTokenHash: hashedToken,
-    resetPasswordExpires: { $gt: new Date() }
+    where: {
+      resetPasswordTokenHash: hashedToken,
+      resetPasswordExpires: { [Op.gt]: new Date() }
+    }
   });
 
   if (!user) {
@@ -158,9 +160,9 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 
   user.password = password;
-  user.resetPasswordTokenHash = undefined;
-  user.resetPasswordExpires = undefined;
-  user.refreshTokenHash = undefined;
+  user.resetPasswordTokenHash = null;
+  user.resetPasswordExpires = null;
+  user.refreshTokenHash = null;
   await user.save();
 
   res.json({ message: "Password reset successful" });

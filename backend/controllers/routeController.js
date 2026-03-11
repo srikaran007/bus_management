@@ -1,4 +1,4 @@
-const Route = require("../models/Route");
+const { Route, Bus } = require("../models");
 const AppError = require("../utils/AppError");
 const asyncHandler = require("../utils/asyncHandler");
 const {
@@ -8,8 +8,17 @@ const {
   getPaginationMeta
 } = require("../utils/queryFeatures");
 
+const serializeRoute = (route) => {
+  const data = route.toJSON();
+  if (data.assignedBusDetails) {
+    data.assignedBus = data.assignedBusDetails;
+    delete data.assignedBusDetails;
+  }
+  return data;
+};
+
 const getRoutes = asyncHandler(async (req, res) => {
-  const { page, limit, skip, sort } = createPaginationOptions(req.query, {
+  const { page, limit, offset, order } = createPaginationOptions(req.query, {
     defaultSort: "-createdAt"
   });
 
@@ -21,23 +30,28 @@ const getRoutes = asyncHandler(async (req, res) => {
     "stops"
   ]);
   const busFilter = req.query.assignedBus ? { assignedBus: req.query.assignedBus } : {};
-  const filter = mergeFilters(searchFilter, busFilter);
+  const where = mergeFilters(searchFilter, busFilter);
 
-  const [items, total] = await Promise.all([
-    Route.find(filter).populate("assignedBus").sort(sort).skip(skip).limit(limit),
-    Route.countDocuments(filter)
-  ]);
+  const { rows, count } = await Route.findAndCountAll({
+    where,
+    include: [{ model: Bus, as: "assignedBusDetails" }],
+    order,
+    offset,
+    limit
+  });
 
   res.json({
-    items,
-    pagination: getPaginationMeta(total, page, limit)
+    items: rows.map(serializeRoute),
+    pagination: getPaginationMeta(count, page, limit)
   });
 });
 
 const getRouteById = asyncHandler(async (req, res) => {
-  const route = await Route.findById(req.params.id).populate("assignedBus");
+  const route = await Route.findByPk(req.params.id, {
+    include: [{ model: Bus, as: "assignedBusDetails" }]
+  });
   if (!route) throw new AppError("Route not found", 404);
-  res.json(route);
+  res.json(serializeRoute(route));
 });
 
 const createRoute = asyncHandler(async (req, res) => {
@@ -46,14 +60,16 @@ const createRoute = asyncHandler(async (req, res) => {
 });
 
 const updateRoute = asyncHandler(async (req, res) => {
-  const route = await Route.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+  const route = await Route.findByPk(req.params.id);
   if (!route) throw new AppError("Route not found", 404);
+  await route.update(req.body);
   res.json(route);
 });
 
 const deleteRoute = asyncHandler(async (req, res) => {
-  const route = await Route.findByIdAndDelete(req.params.id);
+  const route = await Route.findByPk(req.params.id);
   if (!route) throw new AppError("Route not found", 404);
+  await route.destroy();
   res.json({ message: "Route deleted successfully" });
 });
 

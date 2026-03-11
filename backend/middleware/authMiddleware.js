@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const { User } = require("../models");
 const AppError = require("../utils/AppError");
 const asyncHandler = require("../utils/asyncHandler");
 
@@ -16,7 +16,10 @@ const protect = asyncHandler(async (req, _res, next) => {
   } catch (_error) {
     throw new AppError("Not authorized, token invalid", 401);
   }
-  req.user = await User.findById(decoded.id).select("-password");
+
+  req.user = await User.findByPk(decoded.id, {
+    attributes: { exclude: ["password"] }
+  });
 
   if (!req.user) {
     throw new AppError("User no longer exists", 401);

@@ -1,7 +1,7 @@
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs");
-const connectDB = require("../config/db");
-const User = require("../models/User");
+const { connectDB } = require("../config/db");
+const { User } = require("../models");
 const { ROLES } = require("../utils/constants");
 
 dotenv.config();
@@ -72,7 +72,7 @@ const defaultAccounts = [
 const repairUsers = async () => {
   await connectDB();
 
-  const users = await User.find({});
+  const users = await User.findAll();
   let repaired = 0;
 
   for (const user of users) {
@@ -105,19 +105,24 @@ const repairUsers = async () => {
     const email = normalizeEmail(account.email);
     const hash = await bcrypt.hash(account.password, 10);
 
-    await User.findOneAndUpdate(
-      { email },
-      {
-        $set: {
-          name: account.name,
-          email,
-          role: account.role,
-          phone: account.phone,
-          password: hash
-        }
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const existing = await User.findOne({ where: { email } });
+    if (existing) {
+      await existing.update({
+        name: account.name,
+        email,
+        role: account.role,
+        phone: account.phone,
+        password: hash
+      });
+    } else {
+      await User.create({
+        name: account.name,
+        email,
+        role: account.role,
+        phone: account.phone,
+        password: hash
+      });
+    }
   }
 
   console.log(`User repair completed. Repaired records: ${repaired}`);

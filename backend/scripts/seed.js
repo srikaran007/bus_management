@@ -1,7 +1,7 @@
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs");
-const connectDB = require("../config/db");
-const User = require("../models/User");
+const { connectDB } = require("../config/db");
+const { User } = require("../models");
 const { ROLES } = require("../utils/constants");
 
 dotenv.config();
@@ -50,11 +50,12 @@ const seed = async () => {
   ];
 
   for (const user of defaultUsers) {
-    const exists = await User.findOne({ email: user.email });
+    const exists = await User.findOne({ where: { email: user.email } });
     if (exists) {
       console.log(`Seed skipped: ${user.role} already exists (${user.email})`);
       continue;
     }
+
     const passwordHash = await bcrypt.hash(user.password, 10);
     await User.create({
       name: user.name,

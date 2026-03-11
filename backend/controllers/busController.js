@@ -1,4 +1,4 @@
-const Bus = require("../models/Bus");
+const { Bus, Driver } = require("../models");
 const AppError = require("../utils/AppError");
 const asyncHandler = require("../utils/asyncHandler");
 const {
@@ -8,8 +8,17 @@ const {
   getPaginationMeta
 } = require("../utils/queryFeatures");
 
+const serializeBus = (bus) => {
+  const data = bus.toJSON();
+  if (data.driverDetails) {
+    data.driver = data.driverDetails;
+    delete data.driverDetails;
+  }
+  return data;
+};
+
 const getBuses = asyncHandler(async (req, res) => {
-  const { page, limit, skip, sort } = createPaginationOptions(req.query, {
+  const { page, limit, offset, order } = createPaginationOptions(req.query, {
     defaultSort: "-createdAt"
   });
 
@@ -21,23 +30,28 @@ const getBuses = asyncHandler(async (req, res) => {
   ]);
   const statusFilter = req.query.status ? { status: req.query.status } : {};
   const routeFilter = req.query.routeName ? { routeName: req.query.routeName } : {};
-  const filter = mergeFilters(searchFilter, statusFilter, routeFilter);
+  const where = mergeFilters(searchFilter, statusFilter, routeFilter);
 
-  const [items, total] = await Promise.all([
-    Bus.find(filter).populate("driver").sort(sort).skip(skip).limit(limit),
-    Bus.countDocuments(filter)
-  ]);
+  const { rows, count } = await Bus.findAndCountAll({
+    where,
+    include: [{ model: Driver, as: "driverDetails" }],
+    order,
+    offset,
+    limit
+  });
 
   res.json({
-    items,
-    pagination: getPaginationMeta(total, page, limit)
+    items: rows.map(serializeBus),
+    pagination: getPaginationMeta(count, page, limit)
   });
 });
 
 const getBusById = asyncHandler(async (req, res) => {
-  const bus = await Bus.findById(req.params.id).populate("driver");
+  const bus = await Bus.findByPk(req.params.id, {
+    include: [{ model: Driver, as: "driverDetails" }]
+  });
   if (!bus) throw new AppError("Bus not found", 404);
-  res.json(bus);
+  res.json(serializeBus(bus));
 });
 
 const createBus = asyncHandler(async (req, res) => {
@@ -46,14 +60,16 @@ const createBus = asyncHandler(async (req, res) => {
 });
 
 const updateBus = asyncHandler(async (req, res) => {
-  const bus = await Bus.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+  const bus = await Bus.findByPk(req.params.id);
   if (!bus) throw new AppError("Bus not found", 404);
+  await bus.update(req.body);
   res.json(bus);
 });
 
 const deleteBus = asyncHandler(async (req, res) => {
-  const bus = await Bus.findByIdAndDelete(req.params.id);
+  const bus = await Bus.findByPk(req.params.id);
   if (!bus) throw new AppError("Bus not found", 404);
+  await bus.destroy();
   res.json({ message: "Bus deleted successfully" });
 });
 
