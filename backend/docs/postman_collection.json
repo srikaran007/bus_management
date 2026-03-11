@@ -1,0 +1,69 @@
+{
+  "info": {
+    "name": "Bus Management API",
+    "_postman_id": "7a84f653-b6fe-4b2b-8f64-cc96f59787b9",
+    "description": "Starter Postman collection for Bus Management backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/",
+          "host": ["{{baseUrl}}"],
+          "path": [""]
+        }
+      }
+    },
+    {
+      "name": "Auth Register",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin@test.com\",\n  \"password\": \"Admin@123\",\n  \"role\": \"admin\",\n  \"phone\": \"9876543210\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "register"]
+        }
+      }
+    },
+    {
+      "name": "Auth Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"Admin@123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "Get Buses",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/buses",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "buses"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "accessToken", "value": "" }
+  ]
+}
