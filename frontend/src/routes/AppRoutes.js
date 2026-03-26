@@ -17,11 +17,13 @@ import Reports from "../modules/admin/Reports";
 import StudentBusAllocation from "../modules/admin/StudentBusAllocation";
 import BusEntryExitMonitoring from "../modules/admin/BusEntryExitMonitoring";
 import StaffTransportInchargeManagement from "../modules/admin/StaffTransportInchargeManagement";
+import DriverSmartScheduler from "../modules/admin/DriverSmartScheduler";
 
 import TransportDashboard from "../modules/transportincharge/TransportinchargeDashboard";
 import EntryExit from "../modules/transportincharge/EntryExit";
 import BusStatus from "../modules/transportincharge/BusStatus";
 import DriverAttendance from "../modules/transportincharge/DriverAttendance";
+import BusInchargeAssignment from "../modules/transportincharge/BusInchargeAssignment";
 
 import StaffDashboard from "../modules/staff/StaffDashboard";
 import ViewRoutes from "../modules/staff/ViewRoutes";
@@ -67,11 +69,14 @@ function AppRoutes() {
           element={<StaffTransportInchargeManagement />}
         />
         <Route path="/admin/reports" element={<Reports />} />
+        <Route path="/admin/driver-smart-scheduler" element={<DriverSmartScheduler />} />
 
         <Route path="/transport/dashboard" element={<TransportDashboard />} />
         <Route path="/transport/entry-exit" element={<EntryExit />} />
         <Route path="/transport/bus-status" element={<BusStatus />} />
         <Route path="/transport/driver-attendance" element={<DriverAttendance />} />
+        <Route path="/transport/driver-smart-scheduler" element={<DriverSmartScheduler />} />
+        <Route path="/transport/bus-incharge-assignment" element={<BusInchargeAssignment />} />
 
         <Route path="/staff/dashboard" element={<StaffDashboard />} />
         <Route path="/staff/view-routes" element={<ViewRoutes />} />

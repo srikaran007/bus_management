@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { getDrivers } from "../../services/driverService";
 import { getAttendance } from "../../services/attendanceService";
 
 const todayDate = new Date().toISOString().split("T")[0];
@@ -7,61 +6,54 @@ const todayDate = new Date().toISOString().split("T")[0];
 function DriverAttendance() {
   const [attendanceDate, setAttendanceDate] = useState(todayDate);
   const [searchTerm, setSearchTerm] = useState("");
-  const [driverRows, setDriverRows] = useState([]);
   const [attendanceRows, setAttendanceRows] = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [drivers, attendance] = await Promise.all([
-          getDrivers({ limit: 200 }),
-          getAttendance({ subjectType: "Driver", date: attendanceDate, limit: 200 })
-        ]);
-        setDriverRows(
-          drivers.map((driver) => ({
-            driverId: driver.driverId,
-            driverName: driver.driverName,
-            busAssigned: driver.assignedBus?.busNumber || "-"
-          }))
-        );
+        const attendance = await getAttendance({
+          subjectType: "Driver",
+          date: attendanceDate,
+          limit: 200
+        });
         setAttendanceRows(attendance);
       } catch (_error) {
-        setDriverRows([]);
         setAttendanceRows([]);
       }
     };
     loadData();
   }, [attendanceDate]);
 
-  const attendanceMap = useMemo(() => {
-    const map = {};
-    attendanceRows.forEach((row) => {
-      map[row.subjectId] = row.status;
-    });
-    return map;
+  const normalizedRows = useMemo(() => {
+    return attendanceRows.map((row) => ({
+      id: row._id || row.id,
+      driverName: row.markedBy?.name || `Driver ${row.subjectId}`,
+      driverRef: row.subjectId,
+      attendanceType: row.attendanceType,
+      status: row.status
+    }));
   }, [attendanceRows]);
 
   const totals = useMemo(() => {
-    const values = Object.values(attendanceMap);
     return {
-      present: values.filter((value) => value === "Present").length,
-      absent: values.filter((value) => value === "Absent").length,
-      leave: values.filter((value) => value === "Leave").length
+      present: normalizedRows.filter((row) => row.status === "Present").length,
+      absent: normalizedRows.filter((row) => row.status === "Absent").length,
+      leave: normalizedRows.filter((row) => row.status === "Leave").length
     };
-  }, [attendanceMap]);
+  }, [normalizedRows]);
 
   const filteredRows = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
     if (!search) {
-      return driverRows;
+      return normalizedRows;
     }
-    return driverRows.filter(
+    return normalizedRows.filter(
       (row) =>
         row.driverName.toLowerCase().includes(search) ||
-        row.driverId.toLowerCase().includes(search) ||
-        row.busAssigned.toLowerCase().includes(search)
+        row.driverRef.toLowerCase().includes(search) ||
+        row.attendanceType.toLowerCase().includes(search)
     );
-  }, [searchTerm, driverRows]);
+  }, [searchTerm, normalizedRows]);
 
   return (
     <div className="admin-overview manage-buses-page">
@@ -103,7 +95,7 @@ function DriverAttendance() {
             className="bus-list-search"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Search driver by name, ID, or bus"
+            placeholder="Search by driver name, reference, or session"
           />
         </div>
 
@@ -112,28 +104,28 @@ function DriverAttendance() {
             <thead>
               <tr>
                 <th>Driver Name</th>
-                <th>Driver ID</th>
-                <th>Bus Assigned</th>
+                <th>Driver Ref</th>
+                <th>Session</th>
                 <th>Attendance</th>
               </tr>
             </thead>
             <tbody>
               {filteredRows.map((row) => (
-                <tr key={row.driverId}>
+                <tr key={row.id || `${row.driverRef}-${row.attendanceType}`}>
                   <td>{row.driverName}</td>
-                  <td>{row.driverId}</td>
-                  <td>{row.busAssigned}</td>
+                  <td>{row.driverRef}</td>
+                  <td>{row.attendanceType}</td>
                   <td>
                     <span
                       className={`status-pill ${
-                        attendanceMap[row.driverId] === "Present"
+                        row.status === "Present"
                           ? "status-active"
-                          : attendanceMap[row.driverId] === "Leave"
+                          : row.status === "Leave"
                           ? "status-maintenance"
                           : "status-inactive"
                       }`}
                     >
-                      {attendanceMap[row.driverId]}
+                      {row.status}
                     </span>
                   </td>
                 </tr>

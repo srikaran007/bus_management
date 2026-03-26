@@ -26,8 +26,7 @@ function BusList() {
     return buses.filter((bus) => {
       return (
         bus.busNumber.toLowerCase().includes(normalizedSearch) ||
-        bus.driver.toLowerCase().includes(normalizedSearch) ||
-        bus.route.toLowerCase().includes(normalizedSearch)
+        bus.busName.toLowerCase().includes(normalizedSearch)
       );
     });
   }, [buses, searchTerm]);
@@ -88,7 +87,7 @@ function BusList() {
             type="text"
             value={searchTerm}
             onChange={handleSearchChange}
-            placeholder="Search by Bus Number, Driver Name, or Route"
+            placeholder="Search by Bus Number or Bus Name"
             className="bus-list-search"
           />
         </div>
@@ -99,9 +98,6 @@ function BusList() {
               <tr>
                 <th>Bus No</th>
                 <th>Bus Name</th>
-                <th>Route</th>
-                <th>Driver</th>
-                <th>Phone</th>
                 <th>Capacity</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -113,9 +109,6 @@ function BusList() {
                   <tr key={bus.id}>
                     <td>{bus.busNumber}</td>
                     <td>{bus.busName}</td>
-                    <td>{bus.route}</td>
-                    <td>{bus.driver}</td>
-                    <td>{bus.phone}</td>
                     <td>{bus.capacity}</td>
                     <td>
                       <span
@@ -142,7 +135,7 @@ function BusList() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="8">No buses found for the current search.</td>
+                  <td colSpan="5">No buses found for the current search.</td>
                 </tr>
               )}
             </tbody>

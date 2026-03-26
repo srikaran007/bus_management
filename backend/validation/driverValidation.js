@@ -1,4 +1,5 @@
 const Joi = require("joi");
+const { INSTITUTIONS } = require("../utils/constants");
 
 const createDriverSchema = Joi.object({
   driverName: Joi.string().required(),
@@ -7,6 +8,9 @@ const createDriverSchema = Joi.object({
   licenseNumber: Joi.string().required(),
   experience: Joi.string().optional(),
   assignedBus: Joi.string().optional(),
+  institution: Joi.string()
+    .valid(...INSTITUTIONS)
+    .optional(),
   status: Joi.string().valid("Active", "Inactive", "Leave").optional()
 });
 

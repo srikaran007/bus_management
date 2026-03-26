@@ -6,4 +6,13 @@ const ROLES = {
   DRIVER: "driver"
 };
 
-module.exports = { ROLES };
+const INSTITUTIONS = [
+  "N.S Eng Clg",
+  "N.S Arts Clg",
+  "N.S Matric School",
+  "N.S Public School",
+  "Vidyalaya School",
+  "BEd Clg"
+];
+
+module.exports = { ROLES, INSTITUTIONS };

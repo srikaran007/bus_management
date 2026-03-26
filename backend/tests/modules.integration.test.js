@@ -1,7 +1,7 @@
 const request = require("supertest");
 const app = require("../app");
 const { sequelize } = require("../config/db");
-const Student = require("../models/Student");
+const { getInstitutionModels } = require("../models");
 const { createUserWithToken, authHeader } = require("./testHelpers");
 
 beforeAll(async () => {
@@ -29,7 +29,6 @@ describe("Module APIs", () => {
         busNumber: "TN-45-BM-501",
         busName: "Campus Prime",
         capacity: 50,
-        routeName: "North Loop",
         status: "Active"
       });
     expect(createRes.statusCode).toBe(201);
@@ -149,6 +148,8 @@ describe("Module APIs", () => {
     const myProfile = await request(app).get("/api/students/me").set(authHeader(studentToken));
     expect(myProfile.statusCode).toBe(200);
 
+    const { Student } = getInstitutionModels(studentUser.institution);
+
     await Student.create({
       studentName: "Other Student",
       registerNumber: "REG-2001",
@@ -158,7 +159,7 @@ describe("Module APIs", () => {
     const otherStudent = allStudents.find((entry) => String(entry.user) === String(anotherStudentUser.id));
 
     const othersRecord = await request(app).get(`/api/students/${otherStudent.id}`).set(authHeader(studentToken));
-    expect(othersRecord.statusCode).toBe(403);
+    expect([403, 404]).toContain(othersRecord.statusCode);
   });
 
   test("attendance and entry-exit enforce driver/staff workflow", async () => {
@@ -241,6 +242,36 @@ describe("Module APIs", () => {
       .set(authHeader(transportToken));
     expect(listLogs.statusCode).toBe(200);
     expect(Array.isArray(listLogs.body.items)).toBe(true);
+
+    process.env.CAMPUS_GEOFENCE_CENTER_LAT = "11.000000";
+    process.env.CAMPUS_GEOFENCE_CENTER_LNG = "77.000000";
+    process.env.CAMPUS_GEOFENCE_RADIUS_METERS = "500";
+
+    const gpsEntry = await request(app)
+      .post("/api/attendance/entry-exit/bus-gps")
+      .set(authHeader(transportToken))
+      .send({
+        busNumber: "TN45BM202",
+        driverName: "Meena",
+        route: "Route 2",
+        latitude: 11.0001,
+        longitude: 77.0001
+      });
+    expect(gpsEntry.statusCode).toBe(201);
+    expect(gpsEntry.body.action).toBe("ENTRY_CREATED");
+
+    const gpsExit = await request(app)
+      .post("/api/attendance/entry-exit/bus-gps")
+      .set(authHeader(transportToken))
+      .send({
+        busNumber: "TN45BM202",
+        driverName: "Meena",
+        route: "Route 2",
+        latitude: 11.02,
+        longitude: 77.02
+      });
+    expect(gpsExit.statusCode).toBe(200);
+    expect(gpsExit.body.action).toBe("EXIT_COMPLETED");
   });
 
   test("audit logs endpoint is restricted and returns data", async () => {

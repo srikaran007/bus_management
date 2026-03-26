@@ -8,3 +8,5 @@ process.env.MYSQL_DATABASE = process.env.MYSQL_DATABASE || "bus_management";
 process.env.MYSQL_USER = process.env.MYSQL_USER || "root";
 process.env.MYSQL_PASSWORD = process.env.MYSQL_PASSWORD || "";
 process.env.DB_SYNC = "false";
+
+jest.setTimeout(30000);

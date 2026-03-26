@@ -14,15 +14,15 @@ const sidebarLinksByRole = {
       label: "Staff / Transport Incharge Mgmt"
     },
     { to: "/admin/reports", label: "Reports" },
-    { to: "/buses/list", label: "Bus List" },
-    { to: "/buses/add", label: "Add Bus" },
-    { to: "/buses/edit", label: "Edit Bus" },
+    { to: "/admin/driver-smart-scheduler", label: "Driver ML Scheduler" }
   ],
   transport: [
     { to: "/transport/dashboard", label: "Dashboard" },
     { to: "/transport/entry-exit", label: "Entry / Exit" },
     { to: "/transport/bus-status", label: "Bus Status" },
     { to: "/transport/driver-attendance", label: "Driver Attendance" },
+    { to: "/transport/driver-smart-scheduler", label: "Driver ML Scheduler" },
+    { to: "/transport/bus-incharge-assignment", label: "Bus Incharge Assignment" }
   ],
   driver: [
     { to: "/driver/dashboard", label: "Dashboard" },
@@ -31,34 +31,35 @@ const sidebarLinksByRole = {
     { to: "/driver/entry-exit", label: "Entry / Exit" },
     { to: "/driver/assigned-bus", label: "Assigned Bus" },
     { to: "/driver/route-details", label: "Route Details" },
-    { to: "/", label: "Logout" },
+    { to: "/", label: "Logout" }
   ],
   staff: [
     { to: "/staff/dashboard", label: "Dashboard" },
     { to: "/staff/student-bus-list", label: "Students Bus List" },
     { to: "/staff/view-routes", label: "Routes" },
     { to: "/staff/student-attendance", label: "Attendance" },
-    { to: "/", label: "Logout" },
+    { to: "/", label: "Logout" }
   ],
   student: [
     { to: "/student/dashboard", label: "Dashboard" },
     { to: "/student/my-bus", label: "My Bus" },
     { to: "/student/route-details", label: "Route Details" },
     { to: "/student/driver-details", label: "Driver Details" },
-    { to: "/student/bus-incharge-details", label: "Bus Incharge Details" },
-  ],
+    { to: "/student/bus-incharge-details", label: "Bus Incharge Details" }
+  ]
 };
 
-function Sidebar() {
+function Sidebar({ className = "", onNavigate = null }) {
   const { pathname } = useLocation();
   const pathRoot = pathname.split("/")[1];
   const currentRole = pathRoot === "buses" ? "admin" : pathRoot;
   const links = sidebarLinksByRole[currentRole] || [];
+  const sidebarClassName = className ? `sidebar ${className}` : "sidebar";
 
   return (
-    <aside className="sidebar">
+    <aside className={sidebarClassName}>
       {links.map((link) => (
-        <Link key={link.to} to={link.to}>
+        <Link key={link.to} to={link.to} onClick={onNavigate}>
           {link.label}
         </Link>
       ))}

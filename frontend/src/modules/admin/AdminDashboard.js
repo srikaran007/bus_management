@@ -1,112 +1,145 @@
-import React from "react";
-
-const metricCards = [
-  { title: "Total Buses", value: "48", accent: "metric-accent-red" },
-  { title: "Total Drivers", value: "62", accent: "metric-accent-light" },
-  { title: "Total Students Using Bus", value: "1,286", accent: "metric-accent-light" },
-  { title: "Active Routes", value: "27", accent: "metric-accent-teal" }
-];
-
-const recentActivity = [
-  { time: "09:05 AM", text: "Bus TN-45-BM-102 entered campus gate A." },
-  { time: "09:12 AM", text: "Driver Arjun Kumar marked present for Route 7." },
-  { time: "09:21 AM", text: "Bus TN-45-BM-145 exited from gate C." },
-  { time: "09:30 AM", text: "Driver Meera S updated delay for Route 12." }
-];
+import React, { useEffect, useMemo, useState } from "react";
+import { getDashboardSummary } from "../../services/adminService";
+import { getCurrentUser } from "../../services/sessionService";
 
 function AdminDashboard() {
+  const [summary, setSummary] = useState({ totals: {}, institutions: [], scope: "" });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const currentUser = getCurrentUser();
+
+  useEffect(() => {
+    const loadSummary = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const data = await getDashboardSummary();
+        setSummary(data);
+      } catch (_error) {
+        setError("Unable to load dashboard summary.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSummary();
+  }, []);
+
+  const totals = summary.totals || {};
+
+  const subtitle = useMemo(() => {
+    if (summary.scope === "all_institutions") {
+      return "Overall operational snapshot across all institutions.";
+    }
+
+    const institutionName = summary.institution || currentUser?.institution || "your institution";
+    return `Operational snapshot for ${institutionName}.`;
+  }, [summary.scope, summary.institution, currentUser]);
+
   return (
-    <div className="admin-overview">
+    <div className="admin-overview admin-dashboard-page">
       <section className="overview-hero">
-        <h1>Welcome back, Admin</h1>
-        <p>Main overview page for bus operations and campus movement.</p>
+        <h1>Admin Dashboard</h1>
+        <p>{subtitle}</p>
       </section>
+
+      {error ? <p className="error-message">{error}</p> : null}
 
       <section className="metrics-grid">
-        {metricCards.map((metric) => (
-          <article key={metric.title} className={`metric-card ${metric.accent}`}>
-            <p className="metric-title">{metric.title}</p>
-            <h2 className="metric-value">{metric.value}</h2>
-          </article>
-        ))}
+        <article className="metric-card metric-accent-red">
+          <p className="metric-title">Total Buses</p>
+          <h2 className="metric-value">{loading ? "-" : totals.totalBuses || 0}</h2>
+        </article>
+        <article className="metric-card metric-accent-light">
+          <p className="metric-title">Total Drivers</p>
+          <h2 className="metric-value">{loading ? "-" : totals.totalDrivers || 0}</h2>
+        </article>
+        <article className="metric-card metric-accent-light">
+          <p className="metric-title">Total Students</p>
+          <h2 className="metric-value">{loading ? "-" : totals.totalStudents || 0}</h2>
+        </article>
+        <article className="metric-card metric-accent-teal">
+          <p className="metric-title">Running Trips</p>
+          <h2 className="metric-value">{loading ? "-" : totals.runningTrips || 0}</h2>
+        </article>
       </section>
 
-      <section className="content-grid">
-        <article className="panel">
-          <header className="panel-header">
-            <h3>Today&apos;s Bus Status</h3>
-            <span>Live snapshot</span>
-          </header>
-          <div className="status-ring-wrap">
-            <div className="status-ring" />
-            <div className="status-legend">
+      <section className="panel">
+        <header className="panel-header">
+          <h3>Institution-Wise Summary</h3>
+          <span>
+            {summary.scope === "all_institutions"
+              ? "All institutions overview"
+              : "Your institution overview"}
+          </span>
+        </header>
+        <div className="table-wrap">
+          <table className="bus-table institution-wise-table">
+            <thead>
+              <tr>
+                <th>Institution</th>
+                <th>Buses</th>
+                <th>Active Buses</th>
+                <th>Drivers</th>
+                <th>Students</th>
+                <th>Routes</th>
+                <th>Running Trips</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="7">Loading dashboard data...</td>
+                </tr>
+              ) : summary.institutions?.length ? (
+                summary.institutions.map((row) => (
+                  <tr key={row.institution}>
+                    <td>{row.institution}</td>
+                    <td>{row.totalBuses}</td>
+                    <td>{row.activeBuses}</td>
+                    <td>{row.totalDrivers}</td>
+                    <td>{row.totalStudents}</td>
+                    <td>{row.totalRoutes}</td>
+                    <td>{row.runningTrips}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7">No dashboard data found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="institution-summary-grid">
+        {(summary.institutions || []).map((row) => (
+          <article key={`${row.institution}-card`} className="panel institution-summary-card">
+            <header className="panel-header institution-summary-header">
+              <h3>{row.institution}</h3>
+              <span>{row.runningTrips} running trips</span>
+            </header>
+            <div className="institution-kpis">
               <p>
-                <span className="dot teal" />
-                On Time: 34
+                <strong>Buses:</strong> {row.totalBuses}
               </p>
               <p>
-                <span className="dot red" />
-                Delayed: 10
+                <strong>Active Buses:</strong> {row.activeBuses}
               </p>
               <p>
-                <span className="dot gray" />
-                Not Started: 4
+                <strong>Drivers:</strong> {row.totalDrivers}
+              </p>
+              <p>
+                <strong>Students:</strong> {row.totalStudents}
+              </p>
+              <p>
+                <strong>Routes:</strong> {row.totalRoutes}
               </p>
             </div>
-          </div>
-        </article>
-
-        <article className="panel">
-          <header className="panel-header">
-            <h3>Bus Usage Statistics</h3>
-            <span>Daily trend</span>
-          </header>
-          <div className="bar-chart">
-            <div style={{ height: "58%" }} />
-            <div style={{ height: "76%" }} />
-            <div style={{ height: "62%" }} />
-            <div style={{ height: "89%" }} />
-            <div style={{ height: "70%" }} />
-            <div style={{ height: "83%" }} />
-            <div style={{ height: "66%" }} />
-          </div>
-        </article>
-
-        <article className="panel">
-          <header className="panel-header">
-            <h3>Route Distribution</h3>
-            <span>Allocation</span>
-          </header>
-          <div className="distribution-list">
-            <div>
-              <p>Urban Routes</p>
-              <strong>40%</strong>
-            </div>
-            <div>
-              <p>Semi-Urban Routes</p>
-              <strong>35%</strong>
-            </div>
-            <div>
-              <p>Rural Routes</p>
-              <strong>25%</strong>
-            </div>
-          </div>
-        </article>
-
-        <article className="panel activity-panel">
-          <header className="panel-header">
-            <h3>Recent Activity</h3>
-            <span>Bus entry / exit logs and driver updates</span>
-          </header>
-          <ul className="activity-list">
-            {recentActivity.map((item) => (
-              <li key={`${item.time}-${item.text}`}>
-                <time>{item.time}</time>
-                <p>{item.text}</p>
-              </li>
-            ))}
-          </ul>
-        </article>
+          </article>
+        ))}
       </section>
     </div>
   );

@@ -12,6 +12,14 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
+  ml-service:
+    build:
+      context: ./ml_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+
   backend:
     build:
       context: ./backend
@@ -22,10 +30,18 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5000
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=bus_management
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - ML_SERVICE_URL=http://ml-service:8001
+      - ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
     ports:
       - "5000:5000"
     depends_on:
       - mysql
+      - ml-service
 
 volumes:
   mysql_data:

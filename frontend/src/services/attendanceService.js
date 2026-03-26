@@ -16,7 +16,17 @@ export async function getEntryExitLogs(params = {}) {
   return extractItems(response.data);
 }
 
+export async function getDriverWorkload(params = {}) {
+  const response = await api.get("/attendance/driver-workload", { params });
+  return response.data || { date: "", totalDrivers: 0, items: [] };
+}
+
 export async function createEntryExitLog(payload) {
   const response = await api.post("/attendance/entry-exit", payload);
+  return response.data;
+}
+
+export async function sendBusGpsPing(payload) {
+  const response = await api.post("/attendance/entry-exit/bus-gps", payload);
   return response.data;
 }

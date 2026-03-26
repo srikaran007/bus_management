@@ -1,5 +1,6 @@
 const { AuditLog, User } = require("../models");
 const asyncHandler = require("../utils/asyncHandler");
+const { institutionFilter } = require("../utils/institutionScope");
 const {
   Op,
   createPaginationOptions,
@@ -40,7 +41,15 @@ const getAuditLogs = asyncHandler(async (req, res) => {
     }
   }
 
-  const where = mergeFilters(roleFilter, methodFilter, userFilter, statusFilter, dateFilter, searchFilter);
+  const where = mergeFilters(
+    roleFilter,
+    methodFilter,
+    userFilter,
+    statusFilter,
+    dateFilter,
+    searchFilter,
+    institutionFilter(req)
+  );
 
   const { rows, count } = await AuditLog.findAndCountAll({
     where,

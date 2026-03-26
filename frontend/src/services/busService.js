@@ -6,14 +6,22 @@ export async function getBuses(params = {}) {
   return extractItems(response.data);
 }
 
-export function addBus(payload) {
-  return api.post("/buses", payload);
+export async function getBusesPage(params = {}) {
+  const response = await api.get("/buses", { params });
+  return response.data || { items: [], pagination: { page: 1, totalPages: 1 } };
 }
 
-export function updateBus(id, payload) {
-  return api.put(`/buses/${id}`, payload);
+export async function addBus(payload, params = {}) {
+  const response = await api.post("/buses", payload, { params });
+  return response.data;
 }
 
-export function deleteBus(id) {
-  return api.delete(`/buses/${id}`);
+export async function updateBus(id, payload, params = {}) {
+  const response = await api.put(`/buses/${id}`, payload, { params });
+  return response.data;
+}
+
+export async function deleteBus(id, params = {}) {
+  const response = await api.delete(`/buses/${id}`, { params });
+  return response.data;
 }

@@ -1,5 +1,5 @@
 const Joi = require("joi");
-const { ROLES } = require("../utils/constants");
+const { ROLES, INSTITUTIONS } = require("../utils/constants");
 
 const emailRule = Joi.string().email({ tlds: { allow: false } });
 
@@ -10,7 +10,10 @@ const registerSchema = Joi.object({
   role: Joi.string()
     .valid(ROLES.ADMIN, ROLES.TRANSPORT, ROLES.STAFF, ROLES.STUDENT, ROLES.DRIVER)
     .required(),
-  phone: Joi.string().pattern(/^\d{10}$/).optional()
+  institution: Joi.string().valid(...INSTITUTIONS).optional(),
+  phone: Joi.string().pattern(/^\d{10}$/).optional(),
+  assignedBusNumber: Joi.string().max(60).optional(),
+  assignedRouteName: Joi.string().max(120).optional()
 });
 
 const loginSchema = Joi.object({

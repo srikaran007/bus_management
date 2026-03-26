@@ -12,6 +12,8 @@ const studentRoutes = require("./routes/studentRoutes");
 const routeRoutes = require("./routes/routeRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const auditRoutes = require("./routes/auditRoutes");
+const mlRoutes = require("./routes/mlRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const { attachRequestId } = require("./middleware/requestContextMiddleware");
 const { auditLogger } = require("./middleware/auditMiddleware");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
@@ -55,6 +57,8 @@ app.use("/api/students", studentRoutes);
 app.use("/api/routes", routeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/audit", auditRoutes);
+app.use("/api/ml", mlRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

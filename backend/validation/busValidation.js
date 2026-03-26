@@ -1,15 +1,15 @@
 const Joi = require("joi");
+const { INSTITUTIONS } = require("../utils/constants");
 
 const createBusSchema = Joi.object({
   busNumber: Joi.string().required(),
   busName: Joi.string().required(),
   model: Joi.string().optional(),
+  institution: Joi.string()
+    .valid(...INSTITUTIONS)
+    .optional(),
   capacity: Joi.number().integer().min(1).required(),
-  routeName: Joi.string().optional(),
-  startingPoint: Joi.string().optional(),
-  endingPoint: Joi.string().optional(),
-  status: Joi.string().valid("Active", "Maintenance", "Idle").optional(),
-  driver: Joi.string().optional()
+  status: Joi.string().valid("Active", "Maintenance", "Idle").optional()
 });
 
 const updateBusSchema = createBusSchema.min(1);

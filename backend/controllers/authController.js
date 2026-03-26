@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { Op } = require("sequelize");
 const { User } = require("../models");
+const { INSTITUTIONS } = require("../utils/constants");
 const AppError = require("../utils/AppError");
 const asyncHandler = require("../utils/asyncHandler");
 
@@ -30,7 +31,10 @@ const sanitizeUser = (user) => ({
   name: user.name,
   email: user.email,
   role: user.role,
-  phone: user.phone
+  institution: user.institution,
+  phone: user.phone,
+  assignedBusNumber: user.assignedBusNumber,
+  assignedRouteName: user.assignedRouteName
 });
 
 const issueTokens = async (user) => {
@@ -42,8 +46,14 @@ const issueTokens = async (user) => {
 };
 
 const register = asyncHandler(async (req, res) => {
-  const { name, password, role, phone } = req.body;
+  const { name, password, role, phone, assignedBusNumber, assignedRouteName } = req.body;
   const email = normalizeEmail(req.body.email);
+  const creatorInstitution = req.user?.institution || null;
+  const institution = creatorInstitution || req.body.institution || null;
+
+  if (!institution || !INSTITUTIONS.includes(institution)) {
+    throw new AppError("Valid institution is required for user registration", 400);
+  }
 
   const exists = await User.findOne({ where: { email } });
   if (exists) {
@@ -55,7 +65,10 @@ const register = asyncHandler(async (req, res) => {
     email,
     password,
     role,
-    phone
+    institution,
+    phone,
+    assignedBusNumber,
+    assignedRouteName
   });
 
   const { accessToken, refreshToken } = await issueTokens(user);

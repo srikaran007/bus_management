@@ -2,17 +2,10 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { addBusRecord } from "./busStore";
 
-const routeOptions = ["North Loop", "City Connector", "South Shuttle", "Hostel Circular"];
-
 const initialForm = {
   busNumber: "",
   busName: "",
   busCapacity: "",
-  driverName: "",
-  driverPhone: "",
-  routeName: routeOptions[0],
-  startingPoint: "",
-  endingPoint: "",
   busStatus: "Active"
 };
 
@@ -34,8 +27,8 @@ function AddBus() {
       validationErrors.busNumber = "Bus Number is required.";
     }
 
-    if (!/^\d{10}$/.test(formData.driverPhone.trim())) {
-      validationErrors.driverPhone = "Driver phone must be exactly 10 digits.";
+    if (!formData.busName.trim()) {
+      validationErrors.busName = "Bus Name is required.";
     }
 
     if (
@@ -64,9 +57,6 @@ function AddBus() {
     await addBusRecord({
       busNumber: formData.busNumber.trim(),
       busName: formData.busName.trim(),
-      route: formData.routeName.trim(),
-      driver: formData.driverName.trim(),
-      phone: formData.driverPhone.trim(),
       capacity: Number(formData.busCapacity),
       status: formData.busStatus
     });
@@ -115,6 +105,7 @@ function AddBus() {
                 onChange={handleChange}
                 placeholder="Campus Express"
               />
+              {errors.busName ? <small className="form-error">{errors.busName}</small> : null}
             </label>
 
             <label>
@@ -133,68 +124,11 @@ function AddBus() {
             </label>
 
             <label>
-              Driver Name
-              <input
-                type="text"
-                name="driverName"
-                value={formData.driverName}
-                onChange={handleChange}
-                placeholder="Driver full name"
-              />
-            </label>
-
-            <label>
-              Driver Phone
-              <input
-                type="text"
-                name="driverPhone"
-                value={formData.driverPhone}
-                onChange={handleChange}
-                placeholder="10 digit number"
-              />
-              {errors.driverPhone ? (
-                <small className="form-error">{errors.driverPhone}</small>
-              ) : null}
-            </label>
-
-            <label>
-              Route Name
-              <select name="routeName" value={formData.routeName} onChange={handleChange}>
-                {routeOptions.map((route) => (
-                  <option key={route} value={route}>
-                    {route}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Starting Point
-              <input
-                type="text"
-                name="startingPoint"
-                value={formData.startingPoint}
-                onChange={handleChange}
-                placeholder="North Gate"
-              />
-            </label>
-
-            <label>
-              Ending Point
-              <input
-                type="text"
-                name="endingPoint"
-                value={formData.endingPoint}
-                onChange={handleChange}
-                placeholder="Main Block"
-              />
-            </label>
-
-            <label>
               Bus Status
               <select name="busStatus" value={formData.busStatus} onChange={handleChange}>
                 <option value="Active">Active</option>
                 <option value="Maintenance">Maintenance</option>
+                <option value="Idle">Idle</option>
               </select>
             </label>
           </div>

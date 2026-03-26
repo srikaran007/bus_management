@@ -44,6 +44,7 @@ const auditLogger = (req, res, next) => {
         requestId: req.requestId,
         user: req.user?.id || req.user?._id,
         role: req.user?.role,
+        institution: req.user?.institution || null,
         method: req.method,
         path: req.originalUrl,
         statusCode: res.statusCode,

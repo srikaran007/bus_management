@@ -7,6 +7,7 @@ const createUserWithToken = async ({
   email = `user_${Date.now()}@test.com`,
   password = "Test@123",
   role = "admin",
+  institution = "N.S Eng Clg",
   phone = "9876543210"
 } = {}) => {
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -15,6 +16,7 @@ const createUserWithToken = async ({
     email,
     password: hashedPassword,
     role,
+    institution,
     phone
   });
 

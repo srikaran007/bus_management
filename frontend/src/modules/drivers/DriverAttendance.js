@@ -12,7 +12,8 @@ function DriverAttendance() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     const user = getCurrentUser();
-    const subjectId = user?.id || user?._id || "driver-self";
+    const rawSubjectId = user?.id ?? user?._id;
+    const subjectId = rawSubjectId != null ? String(rawSubjectId) : "driver-self";
 
     try {
       await markAttendance({
@@ -23,8 +24,12 @@ function DriverAttendance() {
         status
       });
       window.alert(`Attendance submitted\nDate: ${date}\nSession: ${session}\nStatus: ${status}`);
-    } catch (_error) {
-      window.alert("Attendance submission failed. Check API access.");
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Attendance submission failed. Check API access.";
+      window.alert(`Attendance submission failed.\n${message}`);
     }
   };
 

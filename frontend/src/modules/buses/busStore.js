@@ -8,9 +8,6 @@ const defaultBuses = [
     id: 1,
     busNumber: "TN-45-AB-1234",
     busName: "College Bus 1",
-    route: "Main Campus",
-    driver: "Arun Kumar",
-    phone: "9876543210",
     capacity: 52,
     status: "Active"
   },
@@ -18,9 +15,6 @@ const defaultBuses = [
     id: 2,
     busNumber: "TN-45-AB-3312",
     busName: "College Bus 2",
-    route: "City Connector",
-    driver: "Meena R",
-    phone: "9789034561",
     capacity: 46,
     status: "Maintenance"
   }
@@ -52,9 +46,6 @@ const fromApiBus = (bus) => ({
   id: bus._id || bus.id,
   busNumber: bus.busNumber,
   busName: bus.busName,
-  route: bus.routeName || bus.route || "",
-  driver: bus.driverName || bus.driver?.driverName || bus.driver || "",
-  phone: bus.phone || "",
   capacity: bus.capacity,
   status: bus.status
 });
@@ -76,7 +67,6 @@ export const addBusRecord = async (payload) => {
       busNumber: payload.busNumber,
       busName: payload.busName,
       capacity: Number(payload.capacity),
-      routeName: payload.route,
       status: payload.status
     });
     const created = fromApiBus(response.data);
@@ -98,7 +88,6 @@ export const updateBusRecord = async (id, updates) => {
     const response = await api.put(`/buses/${id}`, {
       busName: updates.busName,
       capacity: Number(updates.capacity),
-      routeName: updates.route,
       status: updates.status
     });
     const updatedBus = fromApiBus(response.data);
